@@ -1,0 +1,129 @@
+<div class="page-header-modern d-flex justify-content-between align-items-center">
+    <h1 class="header-title-modern"><i class="fas fa-calendar-check text-secondary me-2"></i> Gestión de Citas</h1>
+    <div class="header-actions">
+        <button class="btn btn-primary btn-sm" onclick="openNewCita()">
+            <i class="fas fa-plus me-1"></i> Nueva Cita
+        </button>
+<button class="btn btn-outline-secondary" onclick="loadTablaCitas()">
+    <i class="fas fa-sync-alt"></i> Actualizar
+</button>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+        <input id="citasSearch" class="form-control" placeholder="Buscar por paciente..." style="min-width: 160px;">
+        <input id="citasFecha" type="date" class="form-control" style="max-width: 150px;">
+        <select id="citasMedico" class="form-control" style="max-width: 200px;">
+            <option value="">Todos los profesionales</option>
+        </select>
+        <select id="citasEstado" class="form-control" style="max-width: 150px;">
+            <option value="">Todos</option>
+            <option value="PROGRAMADA">Programada</option>
+            <option value="CONFIRMADA">Confirmada</option>
+            <option value="ATENDIDA">Atendida</option>
+            <option value="FINALIZADA">Completada</option>
+            <option value="CANCELADA">Cancelada</option>
+        </select>
+        <button class="btn btn-secondary" onclick="loadTablaCitas()">Filtrar</button>
+        <button class="btn btn-light" onclick="limpiarFiltrosCitas()">Limpiar</button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0 table-responsive">
+        <table class="table table-hover mb-0" id="tablaCitas">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Paciente</th>
+                    <th>Médico</th>
+                    <th>Especialidad</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    <div class="card-footer" id="citasPaginacion"></div>
+</div>
+
+<div class="modal fade" id="modalCita" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="formCita">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalCitaLabel">Nueva Cita</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="id_cita" name="id_cita">
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Paciente *</label>
+                            <select class="form-select" id="id_paciente" name="id_paciente" required>
+                                <option value="">Cargando...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Médico *</label>
+                            <select class="form-select" id="id_medico" name="id_medico" required>
+                                <option value="">Cargando...</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Fecha *</label>
+                            <input type="date" class="form-control" id="fecha_cita" name="fecha_cita" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Inicio *</label>
+                            <input type="time" class="form-control" id="hora_inicio" name="hora_inicio" required>
+                            <div id="alertaHorario" class="alert alert-warning alert-dismissible fade show mt-2" style="display: none;"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Fin *</label>
+                            <input type="time" class="form-control" id="hora_fin" name="hora_fin" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Especialidad</label>
+                            <input type="text" class="form-control" id="especialidad" name="especialidad" readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Costo (Bs)</label>
+                            <input type="number" class="form-control" id="costo_consulta" name="costo_consulta" step="0.01">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Motivo</label>
+                            <textarea class="form-control" id="motivo_consulta" name="motivo_consulta" rows="2"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Notas</label>
+                            <textarea class="form-control" id="notas" name="notas" rows="1"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Estado</label>
+                            <select class="form-select" id="estado" name="estado">
+                                <option value="programada">Programada</option>
+                                <option value="confirmada">Confirmada</option>
+                                <option value="en_curso">En Curso</option>
+                                <option value="finalizada">Finalizada</option>
+                                <option value="cancelada">Cancelada</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="submit" class="btn btn-primary" id="btnGuardarCita">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

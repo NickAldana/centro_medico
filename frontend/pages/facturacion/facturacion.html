@@ -1,0 +1,426 @@
+<div class="page-header-modern d-flex justify-content-between align-items-center">
+    <h1 class="header-title-modern"><i class="fas fa-file-invoice-dollar text-secondary me-2"></i> Facturación y Caja</h1>
+    <div class="header-actions d-flex gap-2">
+        <button class="btn btn-success btn-sm" id="btnAbrirCaja" onclick="abrirSesionCaja()" style="display:none;">
+            <i class="fas fa-cash-register me-1"></i> Abrir Caja
+        </button>
+        <button class="btn btn-warning btn-sm" id="btnCerrarCaja" onclick="mostrarModalCerrarCaja()" style="display:none;">
+            <i class="fas fa-lock me-1"></i> Cerrar Caja (Corte Z)
+        </button>
+        <button class="btn btn-info btn-sm" id="btnReportes" onclick="mostrarReportes()" style="display:none;">
+            <i class="fas fa-chart-bar me-1"></i> Reportes
+        </button>
+        <button class="btn btn-primary-custom btn-sm" id="btnNuevaFactura" onclick="openNewFactura()" style="display:none;">
+            <i class="fas fa-plus-circle me-1"></i> Nueva Factura
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="loadFacturas()">
+            <i class="fas fa-sync-alt me-1"></i> Refrescar
+        </button>
+    </div>
+</div>
+
+<!-- Panel de Estado de Caja -->
+<div class="card mb-3" id="panelEstadoCaja" style="display:none;">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h6 class="mb-1"><i class="fas fa-cash-register text-success me-2"></i> Estado de Caja</h6>
+                <div id="infoSesionCaja" class="text-muted small">Cargando...</div>
+            </div>
+            <div class="col-md-4 text-end">
+                <button class="btn btn-sm btn-primary" onclick="mostrarModalMovimientoCaja('INGRESO')">
+                    <i class="fas fa-plus-circle me-1"></i> Ingreso
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="mostrarModalMovimientoCaja('EGRESO')">
+                    <i class="fas fa-minus-circle me-1"></i> Egreso
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card card-filters-modern mb-4">
+    <div class="card-body d-flex gap-2 align-items-center">
+        <div class="input-group flex-fill">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+            <input id="factSearch" class="form-control" placeholder="Buscar por paciente, número de factura o CI...">
+        </div>
+        <input id="factFechaInicio" type="date" class="form-control" style="max-width:160px;">
+        <input id="factFechaFin" type="date" class="form-control" style="max-width:160px;">
+        <select id="factEstado" class="form-control" style="max-width:160px;">
+            <option value="">Todos los estados</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="pagada">Pagada</option>
+            <option value="anulada">Anulada</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="loadFacturas()">
+            <i class="fas fa-filter me-1"></i> Filtrar
+        </button>
+        <button class="btn btn-light btn-sm" onclick="limpiarFiltrosFacturas()">
+            <i class="fas fa-times me-1"></i> Limpiar
+        </button>
+    </div>
+</div>
+
+<div class="card card-table-modern">
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover mb-0" id="tablaFacturas">
+            <thead>
+                <tr>
+                    <th># Factura</th>
+                    <th>Fecha</th>
+                    <th>Paciente</th>
+                    <th>CI</th>
+                    <th class="text-end">Subtotal</th>
+                    <th class="text-end">Descuento</th>
+                    <th class="text-end">IVA</th>
+                    <th class="text-end">Total</th>
+                    <th>Método Pago</th>
+                    <th>Ref. Pago</th>
+                    <th class="text-center">Estado</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="12" class="text-center">
+                        <div class="loading">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status"></div> Cargando facturas...
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer" id="facturasPaginacion"></div>
+</div>
+
+<div class="modal fade" id="modalFactura" tabindex="-1" aria-labelledby="modalFacturaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <form id="formFactura">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modalFacturaLabel">
+                        <i class="fas fa-file-invoice me-2"></i> Nueva Factura
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="id_factura" name="id_factura">
+                    <input type="hidden" id="numero_factura" name="numero_factura">
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-primary"><i class="fas fa-user me-1"></i> Información del Paciente</h6>
+                            <div class="mb-3">
+                                <label class="form-label">Paciente *</label>
+                                <select class="form-control" id="id_paciente" name="id_paciente" required onchange="cargarDatosPaciente()">
+                                    <option value="">Seleccionar paciente...</option>
+                                </select>
+                            </div>
+                            <div id="infoPaciente" class="alert alert-info" style="display:none;">
+                                <small id="datosPaciente"></small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary"><i class="fas fa-calendar me-1"></i> Información de Factura</h6>
+                            <div class="mb-3">
+                                <label class="form-label">Fecha de Emisión</label>
+                                <input type="datetime-local" class="form-control" id="fecha_emision" name="fecha_emision" title="Fecha y hora actual al crear la factura">
+                                <small class="text-muted">Se carga automáticamente con la fecha y hora actual</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Estado</label>
+                                <select class="form-control" id="estado" name="estado">
+                                    <option value="pendiente">Pendiente</option>
+                                    <option value="pagada">Pagada</option>
+                                    <option value="anulada">Anulada</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h6 class="text-primary mb-3"><i class="fas fa-list me-1"></i> Detalles de la Factura</h6>
+                    
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Agregar Cita Médica</label>
+                                    <select class="form-control" id="selectCita">
+                                        <option value="">Seleccionar cita...</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Agregar Producto</label>
+                                    <select class="form-control" id="selectProducto">
+                                        <option value="">Seleccionar producto...</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Servicio Personalizado</label>
+                                    <input type="text" class="form-control" id="descripcionServicio" placeholder="Descripción del servicio...">
+                                    <input type="number" class="form-control mt-2" id="precioServicio" placeholder="Precio" step="0.01" min="0">
+                                    <button type="button" class="btn btn-sm btn-success mt-2" onclick="agregarServicioPersonalizado()">
+                                        <i class="fas fa-plus me-1"></i> Agregar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="tablaDetallesFactura">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Descripción</th>
+                                    <th class="text-center" style="width:100px;">Cantidad</th>
+                                    <th class="text-end" style="width:120px;">Precio Unitario</th>
+                                    <th class="text-end" style="width:120px;">Subtotal</th>
+                                    <th class="text-center" style="width:80px;">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyDetalles">
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">No hay detalles agregados</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label class="form-label">Notas</label>
+                                <textarea class="form-control" id="notas" name="notas" rows="3" placeholder="Notas adicionales..."></textarea>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="mb-2 d-flex justify-content-between">
+                                        <strong>Subtotal:</strong>
+                                        <span id="calcSubtotal">Bs. 0.00</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label small">Descuento (Bs.)</label>
+                                        <input type="number" class="form-control form-control-sm" id="descuento" name="descuento" value="0" step="0.01" min="0" onchange="calcularTotales()">
+                                    </div>
+                                    <div class="mb-2 d-flex justify-content-between">
+                                        <strong>IVA (13%):</strong>
+                                        <span id="calcIva">Bs. 0.00</span>
+                                    </div>
+                                    <hr>
+                                    <div class="d-flex justify-content-between">
+                                        <strong>TOTAL:</strong>
+                                        <strong class="text-primary" id="calcTotal">Bs. 0.00</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h6 class="text-primary mb-3"><i class="fas fa-credit-card me-1"></i> Información de Pago</h6>
+                    <div class="mb-2">
+                        <label class="form-check">
+                            <input type="checkbox" class="form-check-input" id="pagoDividido" onchange="togglePagosDivididos()">
+                            <span class="form-check-label">Pago dividido (varios métodos, ej. Efectivo + QR)</span>
+                        </label>
+                    </div>
+                    <div id="panelPagoSimple">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Método de Pago *</label>
+                                <select class="form-control" id="metodo_pago" name="metodo_pago" required>
+                                    <option value="">Seleccionar...</option>
+                                    <option value="Efectivo">Efectivo</option>
+                                    <option value="Tarjeta">Tarjeta</option>
+                                    <option value="QR">QR</option>
+                                    <option value="Transferencia">Transferencia</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Referencia de Pago <span id="refObligatorio" class="text-danger" style="display:none;">*</span></label>
+                                <input type="text" class="form-control" id="referencia_pago" name="referencia_pago" placeholder="Seleccione método de pago">
+                                <small class="text-muted">Efectivo/Tarjeta: auto. QR/Transferencia: obligatorio ingresar referencia/comprobante</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="panelPagosDivididos" class="border rounded p-3 mb-3" style="display:none;">
+                        <p class="small text-muted mb-2">La suma de los montos debe coincidir con el total. Referencia obligatoria para QR/Transferencia.</p>
+                        <div id="listaPagosDivididos"></div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="agregarLineaPago()"><i class="fas fa-plus me-1"></i> Agregar línea</button>
+                        <div class="mt-2"><strong>Suma:</strong> <span id="sumaPagosDivididos">Bs. 0.00</span> <span id="avisoSumaPagos" class="text-danger small"></span></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary-custom" id="btnGuardarFactura">
+                        <i class="fas fa-save me-1"></i> Guardar Factura
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        console.log("🚀 Cargando módulo Facturación...");
+        var script = document.createElement('script');
+        // El parámetro ?v=timestamp es vital para que no cargue el JS viejo de la caché
+        script.src = "/assets/js/facturacion.js?v=" + new Date().getTime();
+        
+        script.onload = function() {
+            console.log("✅ Script facturacion.js cargado exitosamente.");
+            // Forzamos la inicialización del módulo
+            if (typeof initFacturacionModule === 'function') {
+                initFacturacionModule();
+            } else {
+                console.error("❌ Error: initFacturacionModule no encontrado. Verifique el archivo JS.");
+            }
+        };
+        
+        script.onerror = function() {
+            console.error("❌ Error fatal cargando JS de facturación. Verifique la ruta /assets/js/facturacion.js");
+            // Mostrar error visual en la tabla si falla la carga
+            var tbody = document.querySelector('#tablaFacturas tbody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="12" class="text-danger text-center"><i class="fas fa-exclamation-triangle"></i> Error cargando script del módulo.</td></tr>';
+            }
+        };
+        
+        document.body.appendChild(script);
+    })();
+</script>
+
+<!-- Modal Cerrar Caja (Corte Z) -->
+<div class="modal fade" id="modalCerrarCaja" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title"><i class="fas fa-lock me-2"></i> Cerrar Caja (Corte Z)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Importante:</strong> Al cerrar la caja no podrá facturar hasta que se abra una nueva sesión.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Monto Final en Caja (Bs.)</label>
+                    <input type="number" class="form-control" id="montoFinalCaja" step="0.01" min="0" required>
+                    <small class="text-muted">Ingrese el monto físico contado en caja</small>
+                </div>
+                <div id="resumenCierreCaja"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning" onclick="cerrarSesionCaja()">
+                    <i class="fas fa-lock me-1"></i> Cerrar Caja
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Reporte Corte Z (se muestra después del cierre) -->
+<div class="modal fade" id="modalReporteCorteZ" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-file-invoice-dollar me-2"></i> Reporte de Cierre Z</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="contenidoReporteCorteZ"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ingreso/Egreso Caja Chica -->
+<div class="modal fade" id="modalMovimientoCaja" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" id="headerMovimientoCaja">
+                <h5 class="modal-title" id="tituloMovimientoCaja">Registrar Movimiento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formMovimientoCaja">
+                    <input type="hidden" id="tipoMovimiento">
+                    <div class="mb-3">
+                        <label class="form-label">Monto (Bs.) *</label>
+                        <input type="number" class="form-control" id="montoMovimiento" step="0.01" min="0" required>
+                    </div>
+                    <div class="mb-3" id="divCategoriaEgreso" style="display:none;">
+                        <label class="form-label">Categoría</label>
+                        <select class="form-control" id="categoriaMovimiento">
+                            <option value="">Seleccionar categoría...</option>
+                            <option value="Limpieza">Limpieza</option>
+                            <option value="Papelería">Papelería</option>
+                            <option value="Taxis">Taxis / Transporte</option>
+                            <option value="Compra insumos">Compra de insumos</option>
+                            <option value="Alcohol/Gel">Alcohol en gel / Desinfectantes</option>
+                            <option value="Otros">Otros</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Concepto / Detalle *</label>
+                        <textarea class="form-control" id="conceptoMovimiento" rows="3" required placeholder="Descripción del movimiento..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarMovimientoCaja()">
+                    <i class="fas fa-save me-1"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Reportes -->
+<div class="modal fade" id="modalReportes" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title"><i class="fas fa-chart-bar me-2"></i> Reportes de Ingresos</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Fecha Inicio</label>
+                        <input type="date" class="form-control" id="reporteFechaInicio">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Fecha Fin</label>
+                        <input type="date" class="form-control" id="reporteFechaFin">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">&nbsp;</label>
+                        <button class="btn btn-primary w-100" onclick="cargarReporteIngresos()">
+                            <i class="fas fa-search me-1"></i> Generar Reporte
+                        </button>
+                    </div>
+                </div>
+                <div id="contenidoReporte">
+                    <p class="text-muted text-center">Seleccione un rango de fechas y haga clic en "Generar Reporte"</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>

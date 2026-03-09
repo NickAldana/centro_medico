@@ -1,0 +1,246 @@
+<div class="page-header-modern d-flex justify-content-between align-items-center">
+    <div>
+        <h1 class="header-title-modern">
+            <i class="fas fa-chart-line text-secondary me-2"></i> Reportes e Indicadores
+        </h1>
+        <p class="text-muted mb-0">Análisis estadístico y generación de informes</p>
+    </div>
+    <div class="header-actions">
+        <button class="btn btn-outline-secondary btn-sm" onclick="initReportesModule()">
+            <i class="fas fa-sync me-1"></i> Actualizar Tablero
+        </button>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%); color: white;">
+            <div class="card-body">
+                <h6 class="text-uppercase mb-2" style="opacity: 0.8; font-size: 0.8rem;"><i class="fas fa-dollar-sign me-1"></i> Ingresos del Mes</h6>
+                <h3 class="mb-0 font-weight-bold" id="ingresosMes">Bs. 0.00</h3>
+                <small id="variacionIngresos" style="font-size: 0.8rem;">Cargando...</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card border-left-success shadow-sm h-100 py-2" style="border-left: 4px solid #28a745;">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Citas Atendidas</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="citasAtendidas">0</div>
+                        <small class="text-muted" id="variacionCitas">vs mes anterior</small>
+                    </div>
+                    <div class="col-auto"><i class="fas fa-calendar-check fa-2x text-gray-300"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card border-left-info shadow-sm h-100 py-2" style="border-left: 4px solid #17a2b8;">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Pacientes Nuevos</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="pacientesNuevos">0</div>
+                        <small class="text-muted">En este mes</small>
+                    </div>
+                    <div class="col-auto"><i class="fas fa-user-plus fa-2x text-gray-300"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card border-left-warning shadow-sm h-100 py-2" style="border-left: 4px solid #ffc107;">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Ticket Promedio</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="ticketPromedio">Bs. 0.00</div>
+                        <small class="text-muted">Por consulta</small>
+                    </div>
+                    <div class="col-auto"><i class="fas fa-receipt fa-2x text-gray-300"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Tendencia de Ingresos (Semestral)</h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-area" style="height: 320px; position: relative;">
+                    <canvas id="tendenciaIngresosChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Por Especialidad</h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-pie pt-4 pb-2" style="height: 320px; position: relative;">
+                    <canvas id="distribucionEspecialidadChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-lg-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Citas vs Nuevos Pacientes</h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-bar" style="height: 300px; position: relative;">
+                    <canvas id="citasPacientesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Ingresos por Método de Pago</h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-bar" style="height: 300px; position: relative;">
+                    <canvas id="ingresosMetodoPagoChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Historial de Cajas (Arqueos) - Control anti-trampas -->
+<div class="card shadow mb-4 border-warning">
+    <div class="card-header py-3 bg-light">
+        <h6 class="m-0 font-weight-bold text-dark">
+            <i class="fas fa-cash-register me-1"></i> Historial de Cajas (Arqueos)
+        </h6>
+        <p class="mb-0 small text-muted">Sesiones cerradas (Corte Z). Monto teórico = Inicial + Ventas; Diferencia = Declarado − Teórico.</p>
+    </div>
+    <div class="card-body">
+        <div class="row g-2 mb-3">
+            <div class="col-md-3">
+                <label class="form-label small">Fecha desde</label>
+                <input type="date" class="form-control form-control-sm" id="arqueoFechaInicio">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small">Fecha hasta</label>
+                <input type="date" class="form-control form-control-sm" id="arqueoFechaFin">
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="button" class="btn btn-sm btn-primary" onclick="loadHistorialCajas()">
+                    <i class="fas fa-filter me-1"></i> Filtrar
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="limpiarFiltrosArqueos(); loadHistorialCajas();">
+                    Limpiar
+                </button>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered table-hover mb-0" id="tablaArqueos">
+                <thead class="table-light">
+                    <tr>
+                        <th>Fecha cierre</th>
+                        <th>Cajero</th>
+                        <th class="text-end">Apertura (Bs)</th>
+                        <th class="text-end">Ventas sistema (Bs)</th>
+                        <th class="text-end">Monto teórico (Bs)</th>
+                        <th class="text-end">Monto declarado (Bs)</th>
+                        <th class="text-end">Diferencia</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">Cargando historial de cajas...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-file-export me-1"></i> Generador de Reportes</h6>
+    </div>
+    <div class="card-body">
+        <form id="formGenerarReporte" onsubmit="event.preventDefault(); generarPDF();">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Tipo de Reporte</label>
+                    <select class="form-control" id="tipoReporte">
+                        <option value="ingresos_detallados">Ingresos Detallados</option>
+                        <option value="financiero">Resumen Financiero</option>
+                        <option value="inventario">Inventario</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Fecha Inicio</label>
+                    <input type="date" class="form-control" id="fechaInicioReporte">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Fecha Fin</label>
+                    <input type="date" class="form-control" id="fechaFinReporte">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Profesional</label>
+                    <select class="form-control" id="profesionalReporte">
+                        <option value="todos">Todos</option>
+                    </select>
+                </div>
+                <div class="col-12 mt-3">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-file-pdf me-1"></i> Generar PDF
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="exportarExcel()">
+                        <i class="fas fa-file-excel me-1"></i> Exportar Excel
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    (function() {
+        console.log("🚀 Cargando módulo Reportes...");
+        var script = document.createElement('script');
+        script.src = "/assets/js/reportes.js?v=" + new Date().getTime();
+        
+        script.onload = function() {
+            console.log("✅ Script reportes.js cargado exitosamente.");
+            // Esperar a que Chart.js esté listo
+            if (typeof Chart !== 'undefined') {
+                if (typeof initReportesModule === 'function') {
+                    initReportesModule();
+                } else {
+                    console.error("❌ Error: initReportesModule no encontrado.");
+                }
+            } else {
+                console.error("❌ Error: Chart.js no está cargado.");
+            }
+        };
+        
+        script.onerror = function() {
+            console.error("❌ Error fatal cargando JS de reportes.");
+        };
+        
+        document.body.appendChild(script);
+    })();
+</script>

@@ -1,0 +1,28 @@
+# Dependencias de Node.js
+# Esta es la carpeta principal que hace que tu proyecto sea pesado.
+# Se genera automáticamente al ejecutar `npm install`.
+/node_modules
+
+# Archivos de entorno
+# Contienen información sensible como contraseñas de la base de datos.
+# Nunca deben ser subidos a Git. En su lugar, se mantiene un archivo
+# `.env.example` como plantilla en el repositorio.
+.env
+.env.local
+.env.*.local
+
+# Archivos de logs
+logs
+*.log
+npm-debug.log*
+
+# Backups de la base de datos
+# La aplicación genera copias de seguridad que no deben estar en el código fuente.
+# La ruta /public/backups se infiere del controlador de configuración.
+/public/backups/
+
+# Archivos de configuración de IDEs y del sistema operativo
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

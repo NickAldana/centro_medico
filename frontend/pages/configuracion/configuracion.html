@@ -1,0 +1,163 @@
+<div class="page-header-modern d-flex justify-content-between align-items-center">
+    <div>
+        <h1 class="header-title-modern"><i class="fas fa-cogs text-secondary me-2"></i> Configuración</h1>
+        <p class="text-muted mb-0">Seguridad, parámetros y mantenimiento</p>
+    </div>
+    <button id="btnGuardarConfig" class="btn btn-primary-custom" onclick="saveConfig()">
+        <i class="fas fa-save me-1"></i> Guardar Todo
+    </button>
+</div>
+
+<ul class="nav nav-tabs mb-4" id="configTabs" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-general">General</button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-seguridad">Seguridad y Roles</button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-logs">Auditoría</button>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <div class="tab-pane fade show active" id="tab-general">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary">Datos Institucionales</h6></div>
+                    <div class="card-body">
+                        <form id="formConfig">
+                            <div class="row mb-3">
+                                <div class="col-md-8">
+                                    <label class="form-label">Nombre Institución *</label>
+                                    <input id="cfgNombre" class="form-control" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">NIT *</label>
+                                    <input id="cfgNIT" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Dirección</label>
+                                <input id="cfgDireccion" class="form-control">
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Teléfono</label>
+                                    <input id="cfgTelefono" class="form-control">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Email</label>
+                                    <input id="cfgEmail" class="form-control">
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">IVA (%)</label>
+                                    <input id="cfgIva" type="number" class="form-control" step="0.01" min="0" max="100">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label text-danger fw-bold">Cierre Sesión (min) *</label>
+                                    <input id="cfgInactividad" type="number" class="form-control" min="1" max="1440" required>
+                                    <small class="text-muted">Tiempo de inactividad antes de cerrar sesión</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Horario de Atención</label>
+                                    <input id="cfgHorario" class="form-control" placeholder="Ej: Lunes a Domingo 07:00 - 22:00">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label"><i class="fas fa-image me-1"></i> Logo de la Institución</label>
+                                <div class="d-flex align-items-start gap-3">
+                                    <div id="logoPreviewContainer" class="border rounded p-2 d-flex align-items-center justify-content-center" style="width: 150px; height: 150px; background: #f8f9fa; flex-shrink: 0;">
+                                        <img id="logoPreview" src="" alt="Logo" style="max-width: 100%; max-height: 100%; display: none; object-fit: contain;">
+                                        <span id="logoPlaceholder" class="text-muted small text-center">Sin logo<br><i class="fas fa-image fa-2x mt-2"></i></span>
+                                    </div>
+                                    <div class="flex-fill">
+                                        <div class="mb-2">
+                                            <label class="form-label small">Subir imagen</label>
+                                            <input type="file" id="logoFileInput" class="form-control form-control-sm" accept="image/*" onchange="previewLogo(this)">
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label small">O ingresar URL del logo</label>
+                                            <input type="text" id="cfgLogoUrl" class="form-control form-control-sm" placeholder="Ej: /assets/images/LOGO1.png" onchange="actualizarPreviewLogo()">
+                                        </div>
+                                        <small class="text-muted d-block">Formatos: JPG, PNG, GIF. Máx: 2MB</small>
+                                        <button type="button" class="btn btn-sm btn-outline-danger mt-2" onclick="limpiarLogo()">
+                                            <i class="fas fa-times me-1"></i> Quitar Logo
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card shadow border-left-warning">
+                    <div class="card-body text-center">
+                        <i class="fas fa-database fa-3x text-warning mb-3"></i>
+                        <h5>Respaldo de Datos</h5>
+                        <p class="small text-muted">Generar copia SQL completa.</p>
+                        <button class="btn btn-warning w-100" onclick="realizarBackup()">
+                            <i class="fas fa-download me-1"></i> Descargar Backup
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="tab-seguridad">
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">Matriz de Acceso</h6>
+                <div class="d-flex align-items-center">
+                    <label class="me-2 small font-weight-bold">Seleccionar Rol:</label>
+                    <select id="selectRolPermisos" class="form-select form-select-sm" style="width: 200px;" onchange="cargarPermisosRol()">
+                        <option value="">Cargando...</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="permisosContainer" class="row">
+                    <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+                </div>
+                <hr>
+                <div class="text-end">
+                    <button class="btn btn-success" onclick="guardarPermisos()">
+                        <i class="fas fa-check-circle me-1"></i> Actualizar Permisos
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="tab-logs">
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex gap-2">
+                <input id="searchLog" class="form-control form-control-sm" placeholder="Buscar usuario o acción..." style="max-width: 200px;">
+                <input id="dateLog" type="date" class="form-control form-control-sm" style="max-width: 150px;">
+                <button class="btn btn-secondary btn-sm" onclick="loadLogs(1)"><i class="fas fa-search"></i> Filtrar</button>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0" id="tablaLogs">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Usuario</th>
+                            <th>Acción</th>
+                            <th>Módulo</th>
+                            <th>Detalle</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <div class="card-footer" id="logsPaginacion"></div>
+            </div>
+        </div>
+    </div>
+</div>

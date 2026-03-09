@@ -1,0 +1,192 @@
+<div class="page-header-modern d-flex justify-content-between align-items-center">
+    <h1 class="header-title-modern"><i class="fas fa-user-gear text-secondary me-2"></i> Gestión de Usuarios</h1>
+    <div class="header-actions d-flex gap-2">
+        <button class="btn btn-primary-custom btn-sm" onclick="openNewUser()">
+            <i class="fas fa-plus-circle me-1"></i> Nuevo Usuario
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="loadUsuarios()">
+            <i class="fas fa-sync-alt me-1"></i> Refrescar
+        </button>
+    </div>
+</div>
+
+<div class="card card-filters-modern mb-4">
+    <div class="card-body d-flex gap-2 align-items-center">
+        <div class="input-group flex-fill">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+            <input id="userSearch" class="form-control" placeholder="Buscar por nombre, apellidos, CI o usuario...">
+        </div>
+        <select id="userRol" class="form-control" style="max-width:180px;">
+            <option value="">Todos los roles</option>
+        </select>
+        <select id="userEstado" class="form-control" style="max-width:180px;">
+            <option value="TODOS">Todos los estados</option>
+            <option value="ACTIVO">Activos</option>
+            <option value="INACTIVO">Inactivos</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="loadUsuarios()">
+            <i class="fas fa-filter me-1"></i> Filtrar
+        </button>
+        <button class="btn btn-light btn-sm" onclick="limpiarFiltrosUsuarios()">
+            <i class="fas fa-times me-1"></i> Limpiar
+        </button>
+    </div>
+</div>
+
+<div class="card card-table-modern">
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover mb-0" id="tablaUsuarios">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre Completo</th>
+                    <th>Usuario</th>
+                    <th>CI</th>
+                    <th>Email</th>
+                    <th>Cargo</th>
+                    <th>Especialidad</th>
+                    <th>Rol</th>
+                    <th class="text-center">Estado</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="10" class="text-center">
+                        <div class="loading">
+                            <div class="spinner-border spinner-border-sm text-primary"></div> Cargando usuarios...
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer" id="usuariosPaginacion"></div>
+</div>
+
+<div class="modal fade" id="modalUsuario" tabindex="-1" aria-labelledby="modalUsuarioLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <form id="formUsuario">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modalUsuarioLabel">
+                        <i class="fas fa-user-plus me-2"></i> Nuevo Usuario
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="id_usuario" name="id_usuario">
+
+                    <h6 class="text-primary mb-3"><i class="fas fa-id-card me-1"></i> Datos Personales</h6>
+                    
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Nombres *</label>
+                            <input type="text" class="form-control" id="nombres" name="nombres" required maxlength="100">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Apellido Paterno *</label>
+                            <input type="text" class="form-control" id="apellido_paterno" name="apellido_paterno" required maxlength="100">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Apellido Materno</label>
+                            <input type="text" class="form-control" id="apellido_materno" name="apellido_materno" maxlength="100">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Cédula/CI *</label>
+                            <input type="text" class="form-control" id="ci" name="ci" required maxlength="20">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Fecha Nacimiento</label>
+                            <input type="date" class="form-control" id="fecha_nacimiento" name="fecha_nacimiento">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Género</label>
+                            <select class="form-select" id="genero" name="genero">
+                                <option value="">Seleccione...</option>
+                                <option value="M">Masculino</option>
+                                <option value="F">Femenino</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Correo electrónico *</label>
+                            <input type="email" class="form-control" id="email" name="email" required maxlength="100">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Teléfono *</label>
+                            <input type="text" class="form-control" id="telefono" name="telefono" required maxlength="20">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Dirección</label>
+                        <textarea class="form-control" id="direccion" name="direccion" rows="2"></textarea>
+                    </div>
+
+                    <h6 class="text-primary mb-3 mt-4"><i class="fas fa-briefcase me-1"></i> Datos Profesionales</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Cargo</label>
+                            <input type="text" class="form-control" id="cargo" name="cargo" maxlength="50" placeholder="Ej: Médico General">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Especialidad</label>
+                            <input type="text" class="form-control" id="especialidad" name="especialidad" maxlength="100" placeholder="Solo si es médico">
+                        </div>
+                    </div>
+
+                    <h6 class="text-primary mb-3 mt-4"><i class="fas fa-shield-alt me-1"></i> Acceso al Sistema</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Rol *</label>
+                            <select class="form-control" id="id_rol" name="id_rol" required>
+                                <option value="">Cargando...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nombre de Usuario *</label>
+                            <input type="text" class="form-control" id="nombre_usuario" name="nombre_usuario" required maxlength="50">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label" id="labelPassword">Contraseña *</label>
+                            <input type="password" class="form-control" id="password" name="password" maxlength="255">
+                            <small class="text-muted" id="passwordHelp" style="display:none;">Dejar vacío para mantener la actual.</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Confirmar Contraseña</label>
+                            <input type="password" class="form-control" id="password_confirm" name="password_confirm" maxlength="255">
+                        </div>
+                    </div>
+
+                    <div class="mb-3" id="estadoContainer" style="display:none;">
+                        <label class="form-label">Estado</label>
+                        <select class="form-control" id="estado" name="estado">
+                            <option value="activo">Activo</option>
+                            <option value="inactivo">Inactivo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary-custom" id="btnGuardarUsuario">
+                        <i class="fas fa-save me-1"></i> Guardar Usuario
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+

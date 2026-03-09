@@ -1,0 +1,357 @@
+<div class="page-header-modern d-flex justify-content-between align-items-center">
+    <h1 class="header-title-modern"><i class="fas fa-boxes-stacked text-secondary me-2"></i> Inventario</h1>
+    <div class="header-actions d-flex gap-2">
+        <button class="btn btn-primary-custom btn-sm" onclick="openNewProducto()">
+            <i class="fas fa-plus-circle me-1"></i> Nuevo Producto
+        </button>
+        <button class="btn btn-outline-info btn-sm" onclick="openMovimientoInventario()">
+            <i class="fas fa-arrow-right-arrow-left me-1"></i> Movimiento de Inventario
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="loadProductos()">
+            <i class="fas fa-sync-alt me-1"></i> Refrescar
+        </button>
+    </div>
+</div>
+
+<!-- HU004: Alerta productos próximos a vencer (30 días) -->
+<div id="alertaPorVencer" class="alert alert-warning alert-dismissible fade show d-none mb-3" role="alert">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    <strong>Productos próximos a vencer:</strong> <span id="countPorVencer">0</span> lote(s) en los próximos 30 días.
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+
+<div class="card card-filters-modern mb-4">
+    <div class="card-body d-flex gap-2 align-items-center">
+        <div class="input-group flex-fill">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+            <input id="invSearch" class="form-control" placeholder="Buscar por nombre, código o laboratorio...">
+        </div>
+        <select id="invCategoria" class="form-control" style="max-width:200px;">
+            <option value="">Todas las categorías</option>
+        </select>
+        <div class="form-check ms-2">
+            <input class="form-check-input" type="checkbox" id="invBajoStock">
+            <label class="form-check-label" for="invBajoStock">Stock bajo</label>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="loadProductos()">
+            <i class="fas fa-filter me-1"></i> Filtrar
+        </button>
+        <button class="btn btn-light btn-sm" onclick="limpiarFiltrosInventario()">
+            <i class="fas fa-times me-1"></i> Limpiar
+        </button>
+    </div>
+</div>
+
+<div class="card card-table-modern">
+    <div class="card-body table-responsive p-0">
+        <table class="table table-hover mb-0" id="tablaInventario">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Nombre del Producto</th>
+                    <th>Categoría</th>
+                    <th>Laboratorio</th>
+                    <th class="text-center">Stock Actual</th>
+                    <th class="text-center">Stock Mín.</th>
+                    <th class="text-end">Precio Compra</th>
+                    <th class="text-end">Precio Venta</th>
+                    <th class="text-center">Estado</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="10" class="text-center">
+                        <div class="loading">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status"></div> Cargando inventario...
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer" id="inventarioPaginacion"></div>
+</div>
+
+<div class="modal fade" id="modalProducto" tabindex="-1" aria-labelledby="modalProductoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <form id="formProducto">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalProductoLabel">
+                        <i class="fas fa-box me-2"></i> Nuevo Producto
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="id_producto" name="id_producto">
+
+                    <h6 class="text-primary mb-3"><i class="fas fa-info-circle me-1"></i> Información Básica</h6>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Código de Producto *</label>
+                            <input type="text" class="form-control" id="codigo_producto" name="codigo_producto" required maxlength="50">
+                        </div>
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Nombre del Producto *</label>
+                            <input type="text" class="form-control" id="nombre_producto" name="nombre_producto" required maxlength="200">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Categoría *</label>
+                            <select class="form-control" id="id_categoria" name="id_categoria" required>
+                                <option value="">Seleccionar categoría...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Laboratorio</label>
+                            <input type="text" class="form-control" id="laboratorio" name="laboratorio" maxlength="100">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <textarea class="form-control" id="descripcion" name="descripcion" rows="2"></textarea>
+                    </div>
+
+                    <h6 class="text-primary mb-3 mt-4"><i class="fas fa-flask me-1"></i> Características del Medicamento</h6>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Principio Activo</label>
+                            <input type="text" class="form-control" id="principio_activo" name="principio_activo" maxlength="200">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Concentración</label>
+                            <input type="text" class="form-control" id="concentracion" name="concentracion" maxlength="50" placeholder="Ej: 500mg">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Presentación</label>
+                            <input type="text" class="form-control" id="presentacion" name="presentacion" maxlength="50" placeholder="Ej: Tabletas, Jarabe">
+                        </div>
+                    </div>
+
+                    <h6 class="text-primary mb-3 mt-4"><i class="fas fa-calculator me-1"></i> Precios y Stock</h6>
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Unidad de Medida *</label>
+                            <select class="form-control" id="unidad_medida" name="unidad_medida" required>
+                                <option value="unidades">Unidades</option>
+                                <option value="caja">Caja</option>
+                                <option value="frasco">Frasco</option>
+                                <option value="ampolla">Ampolla</option>
+                                <option value="comprimido">Comprimido</option>
+                                <option value="ml">Mililitros (ml)</option>
+                                <option value="gr">Gramos (gr)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Stock Mínimo *</label>
+                            <input type="number" class="form-control" id="stock_minimo" name="stock_minimo" required min="0" value="10">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Stock Máximo</label>
+                            <input type="number" class="form-control" id="stock_maximo" name="stock_maximo" min="0" value="1000">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Requiere Receta</label>
+                            <select class="form-control" id="requiere_receta" name="requiere_receta">
+                                <option value="0">No</option>
+                                <option value="1">Sí</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Precio de Compra (Bs.) *</label>
+                            <input type="number" class="form-control" id="precio_compra" name="precio_compra" required step="0.01" min="0">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Precio de Venta (Bs.) *</label>
+                            <input type="number" class="form-control" id="precio_venta" name="precio_venta" required step="0.01" min="0">
+                        </div>
+                    </div>
+
+                    <div class="mb-3" id="estadoContainer" style="display:none;">
+                        <label class="form-label">Estado</label>
+                        <select class="form-control" id="estado" name="estado">
+                            <option value="activo">Activo</option>
+                            <option value="inactivo">Inactivo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary-custom" id="btnGuardarProducto">
+                        <i class="fas fa-save me-1"></i> Guardar Producto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalInventario" tabindex="-1" aria-labelledby="modalInventarioLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalInventarioLabel">
+                    <i class="fas fa-warehouse me-2"></i> Gestión de Inventario - <span id="nombreProductoInventario"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="id_producto_inventario">
+                
+                <div class="card mb-3">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0"><i class="fas fa-plus-circle me-1"></i> Agregar Lote al Inventario</h6>
+                    </div>
+                    <div class="card-body">
+                        <form id="formAgregarLote">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Número de Lote *</label>
+                                    <input type="text" class="form-control" id="lote" name="lote" required maxlength="50">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Fecha de Vencimiento *</label>
+                                    <input type="date" class="form-control" id="fecha_vencimiento" name="fecha_vencimiento" required>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Cantidad *</label>
+                                    <input type="number" class="form-control" id="cantidad_actual" name="cantidad_actual" required min="1">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Ubicación en Almacén</label>
+                                    <input type="text" class="form-control" id="ubicacion_almacen" name="ubicacion_almacen" maxlength="100" placeholder="Ej: Estante A, Fila 1">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Costo Unitario (Bs.)</label>
+                                    <input type="number" class="form-control" id="costo_unitario" name="costo_unitario" step="0.01" min="0">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i> Agregar Lote
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-list me-1"></i> Lotes Existentes</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive" style="max-height: 400px;">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Lote</th>
+                                        <th>Cantidad</th>
+                                        <th>Reservada</th>
+                                        <th>Vence</th>
+                                        <th>Ubicación</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaLotes">
+                                    <tr><td colspan="7" class="text-center text-muted">Cargando lotes...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalMovimiento" tabindex="-1" aria-labelledby="modalMovimientoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="formMovimiento">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalMovimientoLabel">
+                        <i class="fas fa-arrow-right-arrow-left me-2"></i> Movimiento de Inventario
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Producto *</label>
+                            <select class="form-control" id="id_producto_mov" name="id_producto_mov" required>
+                                <option value="">Seleccionar producto...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Lote *</label>
+                            <select class="form-control" id="id_inventario_mov" name="id_inventario_mov" required>
+                                <option value="">Primero seleccione un producto</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Tipo de Movimiento *</label>
+                            <select class="form-control" id="tipo_movimiento" name="tipo_movimiento" required>
+                                <option value="entrada">Entrada</option>
+                                <option value="salida">Salida</option>
+                                <option value="ajuste">Ajuste</option>
+                                <option value="daño">Daño/Pérdida</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Cantidad *</label>
+                            <input type="number" class="form-control" id="cantidad_mov" name="cantidad_mov" required min="1">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Costo Unitario (Bs.)</label>
+                            <input type="number" class="form-control" id="costo_unitario_mov" name="costo_unitario_mov" step="0.01" min="0">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Motivo *</label>
+                        <textarea class="form-control" id="motivo_mov" name="motivo_mov" rows="2" required placeholder="Ej: Compra a proveedor, Venta, Ajuste por inventario..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Documento de Referencia</label>
+                        <input type="text" class="form-control" id="documento_referencia" name="documento_referencia" maxlength="50" placeholder="Ej: FAC-PROV-001">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Registrar Movimiento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- HU004: Modal Kardex (historial de movimientos) -->
+<div class="modal fade" id="modalKardex" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-history me-2"></i> Kardex - Historial de movimientos</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="kardexBody">
+                    <div class="text-center py-4 text-muted"><div class="spinner-border"></div><br>Cargando...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

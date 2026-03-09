@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso Seguro - Centro Médico</title>
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="login-body">
+
+    <div class="split-screen">
+        <div class="split-left">
+            <div class="overlay-medical"></div>
+            <div class="brand-hero">
+                <h1>Excelencia<br>Médica y Humana</h1>
+                <p>Sistema de Gestión Administrativa - Centro Médico de la Iglesia Católica</p>
+            </div>
+        </div>
+
+        <div class="split-right">
+            <div class="login-box">
+                <div style="text-align: center; margin-bottom: 1.5rem;">
+                    <img src="/assets/images/logo.png" alt="Logo" style="height: 220px; margin-bottom: 1rem;">
+                    
+                    <h2 style="color: var(--primary); font-weight: 700; margin-bottom: 0.5rem;">Bienvenido</h2>
+                    <p style="color: var(--text-muted); font-size: 0.95rem;">Ingrese sus credenciales para continuar</p>
+                </div>
+
+                <form id="formLogin">
+                    <div class="form-floating">
+                        <input type="text" id="username" placeholder=" " required autofocus autocomplete="off">
+                        <label for="username"><i class="fas fa-user me-2"></i> Usuario</label>
+                    </div>
+
+                    <div class="form-floating">
+                        <input type="password" id="password" placeholder=" " required>
+                        <label for="password"><i class="fas fa-lock me-2"></i> Contraseña</label>
+                    </div>
+
+                    <div id="alertaError" class="alert-error d-none" role="alert"></div>
+
+                    <button type="submit" class="btn-login-modern">
+                        Ingresar al Sistema <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
+                    </button>
+                    
+                    <p style="text-align: center; margin-top: 2rem; font-size: 0.85rem; color: #6c757d; line-height: 1.5;">
+                        &copy; 2026 Centro Médico Iglesia Católica. <br>
+                        <span style="opacity: 0.8; font-size: 0.75rem;">Seguridad & Privacidad Garantizada.</span>
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/assets/js/login.js"></script>
+</body>
+</html>
