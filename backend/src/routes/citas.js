@@ -10,7 +10,7 @@ const validateCita = [
     body('id_medico').isInt().withMessage('Médico requerido'),
     body('fecha_cita').matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Fecha inválida (YYYY-MM-DD)'),
     body('hora_inicio').matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Hora inicio inválida'),
-    body('hora_fin').matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Hora fin inválida')
+    body('hora_fin').optional().matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Hora fin inválida')
 ];
 
 // 1. Obtener datos para los selects (PACIENTES Y MEDICOS)

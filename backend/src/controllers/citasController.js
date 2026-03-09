@@ -76,8 +76,8 @@ controller.getCitas = async (req, res) => {
         const { fecha, estado, search } = req.query;
         
         // Datos del Usuario Logueado (Inyectados por Auth Middleware)
-        const userRol = req.user.rol || ''; 
-        const userId = req.user.id;
+        const userRol = req.usuario ? req.usuario.nombre_rol : 'Administrador Sistema'; 
+        const userId = req.usuario ? req.usuario.id_usuario : 1; // Default admin
 
         console.log(`[DEBUG] getCitas -> Usuario: ${userId}, Rol: ${userRol}`);
 
@@ -225,39 +225,56 @@ controller.createCita = async (req, res) => {
     let conn;
     try {
         const { id_paciente, id_medico, fecha_cita, hora_inicio, hora_fin, especialidad, motivo, costo, notas } = req.body;
-        const creadorId = req.user ? req.user.id : 1; // Usar ID real del token
+        const creadorId = req.usuario ? req.usuario.id_usuario : 1; // Usar ID real del token o default admin
 
-        if(!id_paciente || !id_medico || !fecha_cita) {
-            return res.status(400).json({ error: "Faltan datos obligatorios" });
+        if(!id_paciente || !id_medico || !fecha_cita || !hora_inicio) {
+            return res.status(400).json({ error: "Faltan datos obligatorios: paciente, médico, fecha y hora de inicio" });
+        }
+
+        // Validar y calcular hora_fin si no se proporciona
+        let horaFinCalculada = hora_fin;
+        if (!horaFinCalculada) {
+            // Calcular hora_fin como hora_inicio + 30 minutos
+            const [h, m] = hora_inicio.split(':').map(Number);
+            let horas = h;
+            let minutos = m + 30;
+            if (minutos >= 60) {
+                horas = (horas + 1) % 24;
+                minutos -= 60;
+            }
+            horaFinCalculada = `${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}`;
+        }
+
+        // Validar que hora_fin > hora_inicio
+        if (horaFinCalculada <= hora_inicio) {
+            return res.status(400).json({ error: "La hora de fin debe ser posterior a la hora de inicio" });
         }
 
         conn = await database.getConnection();
 
-        // Validar solapamiento
+        // Validar solapamiento con mejor lógica
         const checkSql = `
-            SELECT c.ID_CITA, c.HORA_INICIO, p.NOMBRES || ' ' || p.APELLIDO_PATERNO AS PACIENTE
+            SELECT c.ID_CITA, c.HORA_INICIO, c.HORA_FIN, p.NOMBRES || ' ' || p.APELLIDO_PATERNO AS PACIENTE
             FROM CITAS c
             JOIN PACIENTES p ON c.ID_PACIENTE = p.ID_PACIENTE
             WHERE c.ID_MEDICO = :med 
               AND TRUNC(c.FECHA_CITA) = TO_DATE(:fecha, 'YYYY-MM-DD')
               AND UPPER(c.ESTADO) NOT IN ('CANCELADA', 'ELIMINADA')
               AND (
-                  (:hora_ini >= c.HORA_INICIO AND :hora_ini < c.HORA_FIN) OR
-                  (:hora_fin > c.HORA_INICIO AND :hora_fin <= c.HORA_FIN) OR
-                  (:hora_ini <= c.HORA_INICIO AND :hora_fin >= c.HORA_FIN)
+                  (:hora_ini < c.HORA_FIN AND :hora_fin > c.HORA_INICIO)
               )
         `;
         const ocupado = await conn.execute(checkSql, { 
             med: id_medico, 
             fecha: fecha_cita, 
             hora_ini: hora_inicio,
-            hora_fin: hora_fin || hora_inicio
+            hora_fin: horaFinCalculada
         }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
         
         if(ocupado.rows.length > 0) {
             const c = ocupado.rows[0];
             return res.status(409).json({ 
-                error: `Horario ocupado con ${c.PACIENTE} a las ${c.HORA_INICIO}`
+                error: `Horario ocupado con ${c.PACIENTE} de ${c.HORA_INICIO} a ${c.HORA_FIN}`
             });
         }
 
@@ -273,7 +290,7 @@ controller.createCita = async (req, res) => {
         `;
 
         const result = await conn.execute(sql, {
-            id_paciente, id_medico, fecha: fecha_cita, hora_ini: hora_inicio, hora_fin,
+            id_paciente, id_medico, fecha: fecha_cita, hora_ini: hora_inicio, hora_fin: horaFinCalculada,
             esp: especialidad || '', motivo: motivo || '', costo: costo || 0, notas: notas || '',
             creador: creadorId,
             id_out: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }
@@ -299,7 +316,26 @@ controller.updateCita = async (req, res) => {
         const { id_paciente, id_medico, fecha_cita, hora_inicio, hora_fin, especialidad, motivo, costo, notas, estado } = req.body;
 
         if(!id_paciente || !id_medico || !fecha_cita || !hora_inicio) {
-            return res.status(400).json({ error: "Faltan datos obligatorios" });
+            return res.status(400).json({ error: "Faltan datos obligatorios: paciente, médico, fecha y hora de inicio" });
+        }
+
+        // Validar y calcular hora_fin si no se proporciona
+        let horaFinCalculada = hora_fin;
+        if (!horaFinCalculada) {
+            // Calcular hora_fin como hora_inicio + 30 minutos
+            const [h, m] = hora_inicio.split(':').map(Number);
+            let horas = h;
+            let minutos = m + 30;
+            if (minutos >= 60) {
+                horas = (horas + 1) % 24;
+                minutos -= 60;
+            }
+            horaFinCalculada = `${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}`;
+        }
+
+        // Validar que hora_fin > hora_inicio
+        if (horaFinCalculada <= hora_inicio) {
+            return res.status(400).json({ error: "La hora de fin debe ser posterior a la hora de inicio" });
         }
 
         conn = await database.getConnection();
@@ -312,9 +348,7 @@ controller.updateCita = async (req, res) => {
               AND ID_CITA != :id_actual
               AND UPPER(ESTADO) NOT IN ('CANCELADA', 'ELIMINADA')
               AND (
-                  (:hora_ini >= HORA_INICIO AND :hora_ini < HORA_FIN) OR
-                  (:hora_fin > HORA_INICIO AND :hora_fin <= HORA_FIN) OR
-                  (:hora_ini <= HORA_INICIO AND :hora_fin >= HORA_FIN)
+                  (:hora_ini < HORA_FIN AND :hora_fin > HORA_INICIO)
               )
         `;
         const ocupado = await conn.execute(checkSql, { 
@@ -322,7 +356,7 @@ controller.updateCita = async (req, res) => {
             id_actual: id,
             fecha: fecha_cita, 
             hora_ini: hora_inicio, 
-            hora_fin: hora_fin || hora_inicio
+            hora_fin: horaFinCalculada
         });
         
         if(ocupado.rows.length > 0) {
@@ -350,7 +384,7 @@ controller.updateCita = async (req, res) => {
             id_medico: parseInt(id_medico),
             fecha: fecha_cita, 
             hora_ini: hora_inicio, 
-            hora_fin: hora_fin || hora_inicio,
+            hora_fin: horaFinCalculada,
             esp: especialidad || '', 
             motivo: motivo || '', 
             costo: costo || 0, 

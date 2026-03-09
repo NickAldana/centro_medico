@@ -14,18 +14,18 @@ router.get('/:idUsuario', async (req, res) => {
     try {
         const sql = `
             SELECT 
-                id_notificacion,
-                id_usuario_destino,
-                titulo,
-                mensaje,
-                tipo,
-                id_referencia,
-                leida,
-                fecha_creacion
-            FROM notificaciones
-            WHERE id_usuario_destino = :id
-              AND leida = 0
-            ORDER BY fecha_creacion DESC
+                ID_NOTIFICACION,
+                ID_USUARIO_DESTINO,
+                TITULO,
+                MENSAJE,
+                TIPO,
+                ID_REFERENCIA,
+                LEIDA,
+                FECHA_CREACION
+            FROM NOTIFICACIONES
+            WHERE ID_USUARIO_DESTINO = :id
+              AND LEIDA = 0
+            ORDER BY FECHA_CREACION DESC
         `;
 
         const data = await utils.selectAll(sql, { id: Number(idUsuario) });
