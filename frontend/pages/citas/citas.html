@@ -76,21 +76,29 @@
                             </select>
                         </div>
                         
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label">Fecha *</label>
                             <input type="date" class="form-control" id="fecha_cita" name="fecha_cita" required>
                         </div>
-                        <div class="col-md-8">
-                            <label class="form-label">Horario Disponible *</label>
-                            <div id="horariosContainer" class="border rounded p-3" style="min-height: 120px;">
-                                <div class="text-center text-muted">
-                                    <i class="fas fa-clock me-2"></i>
-                                    Selecciona fecha y médico para ver horarios disponibles
-                                </div>
-                            </div>
-                            <input type="hidden" id="hora_inicio" name="hora_inicio">
-                            <input type="hidden" id="hora_fin" name="hora_fin">
-                            <small class="text-muted">Los horarios se calculan automáticamente con duración de 30 minutos</small>
+                        <div class="col-md-3">
+                            <label class="form-label">Hora Inicio *</label>
+                            <input type="time" class="form-control" id="hora_inicio" name="hora_inicio" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Fin (Opcional)</label>
+                            <input type="time" class="form-control" id="hora_fin" name="hora_fin">
+                            <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">Si dejas en blanco, suma 30 min automático</small>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="button" class="btn btn-outline-info w-100" id="btnValidarHorario" title="Verifica si el horario está disponible">
+                                <i class="fas fa-check-circle"></i> Validar
+                            </button>
+                        </div>
+
+                        <div class="col-12">
+                            <div id="alertaDisponibilidad"></div>
                         </div>
 
                         <div class="col-md-6">

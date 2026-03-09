@@ -42,7 +42,13 @@ function initCitas() {
             window.saveCita(e);
         });
     }
-}
+
+    // Botón de validación de horario
+    const btnValidar = document.getElementById('btnValidarHorario');
+    if (btnValidar) {
+        btnValidar.addEventListener('click', window.validarDisponibilidad);
+    }
+};
 
 // 2. ABRIR MODAL (NUEVA CITA) - ¡ESTA FUNCIÓN FALTABA!
 window.openNewCita = function() {
@@ -234,14 +240,33 @@ window.saveCita = async function(e) {
     }
 
     // Validar campos requeridos
-    if(!form.id_paciente.value || !form.id_medico.value || !form.fecha_cita.value) {
+    if(!form.id_paciente.value || !form.id_medico.value || !form.fecha_cita.value || !form.hora_inicio.value) {
         alert('Por favor complete todos los campos obligatorios (*)');
         return;
     }
 
-    // Validar que se haya seleccionado un horario
-    if(!form.hora_inicio.value || !form.hora_fin.value) {
-        alert('Por favor selecciona un horario disponible');
+    let horaFin = form.hora_fin.value;
+
+    // Si no especificó hora de fin, calcular automáticamente (+30 min)
+    if (!horaFin) {
+        const [h, m] = form.hora_inicio.value.split(':').map(Number);
+        let minutos = m + 30;
+        let horas = h;
+        if (minutos >= 60) {
+            horas = (horas + 1) % 24;
+            minutos -= 60;
+        }
+        horaFin = `${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}`;
+    }
+
+    // Validar que hora_fin > hora_inicio
+    const [h1, m1] = form.hora_inicio.value.split(':').map(Number);
+    const [h2, m2] = horaFin.split(':').map(Number);
+    const minInicio = h1 * 60 + m1;
+    const minFin = h2 * 60 + m2;
+
+    if (minFin <= minInicio) {
+        alert('❌ La hora de fin debe ser posterior a la hora de inicio');
         return;
     }
 
@@ -249,13 +274,12 @@ window.saveCita = async function(e) {
     const url = id ? `/citas/${id}` : '/citas';
     const method = id ? 'PUT' : 'POST';
 
-    // Los horarios ya vienen calculados desde la selección automática
     const data = {
         id_paciente: parseInt(form.id_paciente.value),
         id_medico: parseInt(form.id_medico.value),
         fecha_cita: form.fecha_cita.value,
         hora_inicio: form.hora_inicio.value,
-        hora_fin: form.hora_fin.value,
+        hora_fin: horaFin,
         especialidad: form.especialidad.value || '',
         motivo: form.motivo_consulta.value || '',
         costo: parseFloat(form.costo_consulta.value) || 0,
@@ -281,6 +305,7 @@ window.saveCita = async function(e) {
             if(modalCitaInstance) modalCitaInstance.hide();
             form.reset();
             document.getElementById('id_cita').value = '';
+            document.getElementById('alertaDisponibilidad').innerHTML = '';
             // Recargar tabla para mostrar la nueva cita
             await loadTablaCitas();
         } else {
@@ -376,242 +401,79 @@ document.addEventListener('change', function(e) {
         const opt = e.target.options[e.target.selectedIndex];
         const esp = opt.getAttribute('data-esp');
         if(esp) document.getElementById('especialidad').value = esp;
-        // Actualizar horarios disponibles cuando cambie el médico
-        updateHorariosDisponibles();
-    }
-});
-
-// Listener para cambio de fecha
-document.addEventListener('change', function(e) {
-    if(e.target && e.target.id === 'fecha_cita') {
-        updateHorariosDisponibles();
     }
 });
 
 // ==================================================================
-// SISTEMA DE SELECCIÓN AUTOMÁTICA DE HORARIOS
+// FUNCIÓN PARA VALIDAR DISPONIBILIDAD DE HORARIO
 // ==================================================================
 
-// Actualizar horarios disponibles cuando cambie fecha o médico
-async function updateHorariosDisponibles() {
-    const fecha = document.getElementById('fecha_cita').value;
+window.validarDisponibilidad = async function() {
     const medicoId = document.getElementById('id_medico').value;
-    const container = document.getElementById('horariosContainer');
+    const fecha = document.getElementById('fecha_cita').value;
+    const horaInicio = document.getElementById('hora_inicio').value;
+    const alertaDiv = document.getElementById('alertaDisponibilidad');
 
-    if (!fecha || !medicoId) {
-        container.innerHTML = `
-            <div class="text-center text-muted">
-                <i class="fas fa-clock me-2"></i>
-                Selecciona fecha y médico para ver horarios disponibles
+    if (!medicoId || !fecha || !horaInicio) {
+        alertaDiv.innerHTML = `
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <i class="fas fa-info-circle me-2"></i> Complete médico, fecha y hora para validar
             </div>
         `;
         return;
     }
 
     try {
-        // Mostrar loading
-        container.innerHTML = `
-            <div class="text-center">
-                <div class="spinner-border spinner-border-sm me-2" role="status"></div>
-                Cargando horarios disponibles...
+        alertaDiv.innerHTML = `
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                <div class="spinner-border spinner-border-sm me-2" role="status"></div> Validando...
             </div>
         `;
 
-        // Consultar citas existentes para esta fecha y médico
-        const res = await window.apiFetch(`/citas/disponibilidad?id_medico=${medicoId}&fecha=${fecha}`);
-        if (!res.ok) {
-            throw new Error('Error al consultar horarios');
+        // Calcular hora_fin si no está especificada
+        let horaFin = document.getElementById('hora_fin').value;
+        if (!horaFin) {
+            const [h, m] = horaInicio.split(':').map(Number);
+            let minutos = m + 30;
+            let horas = h;
+            if (minutos >= 60) {
+                horas = (horas + 1) % 24;
+                minutos -= 60;
+            }
+            horaFin = `${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}`;
         }
+
+        const res = await window.apiFetch(
+            `/citas/disponibilidad?id_medico=${medicoId}&fecha=${fecha}&hora_inicio=${horaInicio}&hora_fin=${horaFin}`
+        );
 
         const data = await res.json();
-        const citasOcupadas = data.citas || [];
 
-        // Generar horarios disponibles (8:00 AM a 5:00 PM, cada 30 min)
-        const horariosDisponibles = generarHorariosDisponibles(citasOcupadas);
-
-        renderHorariosDisponibles(horariosDisponibles);
+        if (data.disponible) {
+            alertaDiv.innerHTML = `
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle me-2"></i> <strong>¡Excelente!</strong> Este horario está disponible
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+        } else {
+            alertaDiv.innerHTML = `
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-times-circle me-2"></i> <strong>Horario ocupado:</strong> ${data.mensaje}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+        }
 
     } catch (error) {
-        console.error('Error cargando horarios:', error);
-        container.innerHTML = `
-            <div class="text-center text-danger">
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                Error al cargar horarios disponibles
+        console.error('Error validando:', error);
+        alertaDiv.innerHTML = `
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i> Error al validar disponibilidad
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         `;
     }
-}
-
-// Generar lista de horarios disponibles (8:00 AM - 5:00 PM, cada 30 min)
-function generarHorariosDisponibles(citasOcupadas) {
-    const horarios = [];
-    const horaInicio = 8; // 8:00 AM
-    const horaFin = 17;   // 5:00 PM
-
-    for (let hora = horaInicio; hora < horaFin; hora++) {
-        for (let minuto = 0; minuto < 60; minuto += 30) {
-            const horaStr = `${String(hora).padStart(2, '0')}:${String(minuto).padStart(2, '0')}`;
-            const horaFinStr = minuto === 30 ?
-                `${String(hora + 1).padStart(2, '0')}:00` :
-                `${String(hora).padStart(2, '0')}:30`;
-
-            // Verificar si este horario está ocupado
-            const ocupado = citasOcupadas.some(cita => {
-                const citaInicio = cita.HORA_INICIO || cita.hora_inicio;
-                const citaFin = cita.HORA_FIN || cita.hora_fin;
-                return horarioSolapa(horaStr, horaFinStr, citaInicio, citaFin);
-            });
-
-            if (!ocupado) {
-                horarios.push({
-                    inicio: horaStr,
-                    fin: horaFinStr,
-                    disponible: true
-                });
-            }
-        }
-    }
-
-    return horarios;
-}
-
-// Verificar si dos intervalos de tiempo se solapan
-function horarioSolapa(inicio1, fin1, inicio2, fin2) {
-    const i1 = horaAMinutos(inicio1);
-    const f1 = horaAMinutos(fin1);
-    const i2 = horaAMinutos(inicio2);
-    const f2 = horaAMinutos(fin2);
-
-    return (i1 < f2 && f1 > i2);
-}
-
-// Convertir hora HH:MM a minutos totales
-function horaAMinutos(hora) {
-    const [h, m] = hora.split(':').map(Number);
-    return h * 60 + m;
-}
-
-// Renderizar los botones de horarios disponibles
-function renderHorariosDisponibles(horarios) {
-    const container = document.getElementById('horariosContainer');
-
-    if (horarios.length === 0) {
-        container.innerHTML = `
-            <div class="text-center text-warning">
-                <i class="fas fa-calendar-times me-2"></i>
-                No hay horarios disponibles para esta fecha
-            </div>
-        `;
-        return;
-    }
-
-    // Agrupar por mañana y tarde
-    const manana = horarios.filter(h => horaAMinutos(h.inicio) < 12 * 60);
-    const tarde = horarios.filter(h => horaAMinutos(h.inicio) >= 12 * 60);
-
-    let html = '<div class="row g-2">';
-
-    if (manana.length > 0) {
-        html += `
-            <div class="col-12">
-                <small class="text-muted fw-bold">🌅 MAÑANA</small>
-                <div class="d-flex flex-wrap gap-1 mt-1">
-                    ${manana.map(h => crearBotonHorario(h)).join('')}
-                </div>
-            </div>
-        `;
-    }
-
-    if (tarde.length > 0) {
-        html += `
-            <div class="col-12">
-                <small class="text-muted fw-bold">🌇 TARDE</small>
-                <div class="d-flex flex-wrap gap-1 mt-1">
-                    ${tarde.map(h => crearBotonHorario(h)).join('')}
-                </div>
-            </div>
-        `;
-    }
-
-    html += '</div>';
-    container.innerHTML = html;
-}
-
-// Crear botón para un horario específico
-function crearBotonHorario(horario) {
-    const horaFormateada = formatearHoraAmigable(horario.inicio);
-    return `
-        <button type="button"
-                class="btn btn-outline-primary btn-sm horario-btn"
-                data-inicio="${horario.inicio}"
-                data-fin="${horario.fin}"
-                onclick="seleccionarHorario('${horario.inicio}', '${horario.fin}')">
-            ${horaFormateada}
-        </button>
-    `;
-}
-
-// Formatear hora de manera amigable (8:00 → 8:00 AM)
-function formatearHoraAmigable(hora) {
-    const [h, m] = hora.split(':').map(Number);
-    const periodo = h >= 12 ? 'PM' : 'AM';
-    const hora12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-    return `${hora12}:${String(m).padStart(2, '0')} ${periodo}`;
-}
-
-// Función para seleccionar un horario
-window.seleccionarHorario = function(inicio, fin) {
-    // Remover selección anterior
-    document.querySelectorAll('.horario-btn').forEach(btn => {
-        btn.classList.remove('active', 'btn-primary');
-        btn.classList.add('btn-outline-primary');
-    });
-
-    // Marcar botón seleccionado
-    const botonSeleccionado = document.querySelector(`[data-inicio="${inicio}"]`);
-    if (botonSeleccionado) {
-        botonSeleccionado.classList.remove('btn-outline-primary');
-        botonSeleccionado.classList.add('active', 'btn-primary');
-    }
-
-    // Establecer valores en campos ocultos
-    document.getElementById('hora_inicio').value = inicio;
-    document.getElementById('hora_fin').value = fin;
-
-    console.log(`🕐 Horario seleccionado: ${inicio} - ${fin}`);
-};
-
-// Modificar openNewCita para inicializar horarios
-const originalOpenNewCita = window.openNewCita;
-window.openNewCita = function() {
-    originalOpenNewCita();
-    // Limpiar selección de horario
-    document.querySelectorAll('.horario-btn').forEach(btn => {
-        btn.classList.remove('active', 'btn-primary');
-        btn.classList.add('btn-outline-primary');
-    });
-    document.getElementById('hora_inicio').value = '';
-    document.getElementById('hora_fin').value = '';
-    updateHorariosDisponibles();
-};
-
-// Modificar editarCita para mostrar horario seleccionado
-const originalEditarCita = window.editarCita;
-window.editarCita = async function(id) {
-    await originalEditarCita(id);
-    // Después de cargar los datos, actualizar horarios y marcar el seleccionado
-    setTimeout(() => {
-        updateHorariosDisponibles().then(() => {
-            const horaInicio = document.getElementById('hora_inicio').value;
-            if (horaInicio) {
-                const boton = document.querySelector(`[data-inicio="${horaInicio}"]`);
-                if (boton) {
-                    boton.classList.remove('btn-outline-primary');
-                    boton.classList.add('active', 'btn-primary');
-                }
-            }
-        });
-    }, 100);
 };
 
 // EXPOSICIÓN GLOBAL (INIT)
