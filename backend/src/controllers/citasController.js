@@ -430,13 +430,34 @@ controller.getDisponibilidad = async (req, res) => {
     let conn;
     try {
         const { id_medico, fecha, hora_inicio, hora_fin, id_cita } = req.query;
-        
-        if(!id_medico || !fecha || !hora_inicio) {
-            return res.json({ disponible: true, mensaje: '' });
+
+        // Si no se especifica hora_inicio, devolver todas las citas del día
+        if(!id_medico || !fecha) {
+            return res.json({ citas: [], mensaje: 'Parámetros insuficientes' });
         }
-        
+
+        if(!hora_inicio) {
+            // Devolver todas las citas del día para este médico
+            conn = await database.getConnection();
+            const sql = `
+                SELECT c.ID_CITA, c.HORA_INICIO, c.HORA_FIN,
+                       p.NOMBRES || ' ' || p.APELLIDO_PATERNO AS PACIENTE,
+                       c.ESTADO
+                FROM CITAS c
+                JOIN PACIENTES p ON c.ID_PACIENTE = p.ID_PACIENTE
+                WHERE c.ID_MEDICO = :med
+                  AND TRUNC(c.FECHA_CITA) = TO_DATE(:fecha, 'YYYY-MM-DD')
+                  AND UPPER(c.ESTADO) NOT IN ('CANCELADA', 'ELIMINADA')
+                ORDER BY c.HORA_INICIO
+            `;
+
+            const result = await conn.execute(sql, { med: id_medico, fecha: fecha }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
+            return res.json({ citas: result.rows, mensaje: 'Citas del día obtenidas' });
+        }
+
+        // Verificar disponibilidad de un horario específico
         conn = await database.getConnection();
-        
+
         let horaFinValidar = hora_fin || hora_inicio;
         if(!hora_fin) {
             const [h, m] = hora_inicio.split(':');
@@ -444,12 +465,12 @@ controller.getDisponibilidad = async (req, res) => {
             const horas = parseInt(h) + Math.floor(minutos / 60);
             horaFinValidar = `${String(horas % 24).padStart(2, '0')}:${String(minutos % 60).padStart(2, '0')}`;
         }
-        
+
         const checkSql = `
             SELECT c.HORA_INICIO, p.NOMBRES || ' ' || p.APELLIDO_PATERNO AS PACIENTE
             FROM CITAS c
             JOIN PACIENTES p ON c.ID_PACIENTE = p.ID_PACIENTE
-            WHERE c.ID_MEDICO = :med 
+            WHERE c.ID_MEDICO = :med
               AND TRUNC(c.FECHA_CITA) = TO_DATE(:fecha, 'YYYY-MM-DD')
               AND UPPER(c.ESTADO) NOT IN ('CANCELADA', 'ELIMINADA')
               ${id_cita ? 'AND c.ID_CITA != :id_cita' : ''}
@@ -459,25 +480,25 @@ controller.getDisponibilidad = async (req, res) => {
                   (:hora_ini <= c.HORA_INICIO AND :hora_fin >= c.HORA_FIN)
               )
         `;
-        
-        const binds = { 
-            med: id_medico, fecha: fecha, 
+
+        const binds = {
+            med: id_medico, fecha: fecha,
             hora_ini: hora_inicio, hora_fin: horaFinValidar
         };
         if(id_cita) binds.id_cita = parseInt(id_cita);
-        
+
         const ocupado = await conn.execute(checkSql, binds, { outFormat: oracledb.OUT_FORMAT_OBJECT });
-        
+
         if(ocupado.rows.length > 0) {
             const c = ocupado.rows[0];
-            return res.json({ 
+            return res.json({
                 disponible: false,
                 mensaje: `Ocupado: ${c.HORA_INICIO} con ${c.PACIENTE}`
             });
         }
-        
+
         res.json({ disponible: true, mensaje: 'Horario disponible' });
-        
+
     } catch (e) {
         console.error("Error getDisponibilidad:", e);
         res.json({ disponible: true, mensaje: '', error: e.message });
